@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h2 mb-4">Dashboard</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Vulnerability Overview</h5>
+                    <a href="{{ url_for('new_scan') }}" class="btn btn-primary btn-sm">New Scan</a>
+                </div>
+                <div class="card-body">
+                    {% if chart_json %}
+                    <div id="vulnerabilityChart" style="height: 400px;"></div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">No scan data available. Start a new scan to see results.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Scans</h5>
+                </div>
+                <div class="card-body">
+                    {% if scans %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>URL</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Scheduled</th>
+                                    <th>Next Run</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for scan in scans %}
+                                <tr>
+                                    <td>{{ scan.url }}</td>
+                                    <td>{{ scan.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        {% if scan.status == 'pending' %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                        {% elif scan.status == 'running' %}
+                                        <span class="badge bg-info">Running</span>
+                                        {% elif scan.status == 'completed' %}
+                                        <span class="badge bg-success">Completed</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ scan.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if scan.scheduled %}
+                                        <span class="badge bg-primary">{{ scan.schedule_interval }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">No</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if scan.next_run %}
+                                        {{ scan.next_run.strftime('%Y-%m-%d %H:%M') }}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('view_scan', scan_id=scan.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                            <a href="{{ url_for('trigger_scan', scan_id=scan.id) }}" class="btn btn-sm btn-outline-success">Run</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">No scans found. Start a new scan to see results.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if chart_json %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chartData = {{ chart_json|safe }};
+        Plotly.newPlot('vulnerabilityChart', chartData.data, chartData.layout);
+    });
+</script>
+{% endif %}
+{% endblock %}

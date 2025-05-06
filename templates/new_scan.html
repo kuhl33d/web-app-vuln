@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h2 mb-4">New Vulnerability Scan</h1>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Scan Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('new_scan') }}">
+                        {{ csrf_token() }}
+                        <div class="mb-3">
+                            <label for="url" class="form-label">Target URL</label>
+                            <input type="url" class="form-control" id="url" name="url" placeholder="https://example.com" required>
+                            <div class="form-text">Enter the full URL of the website you want to scan.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="run_now" name="run_now" checked>
+                                <label class="form-check-label" for="run_now">
+                                    Run scan immediately
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="schedule_toggle" onchange="toggleScheduleOptions()">
+                                <label class="form-check-label" for="schedule_toggle">
+                                    Schedule recurring scan
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="scheduleOptions" class="mb-3 ps-4 border-start" style="display: none;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="interval" id="hourly" value="hourly">
+                                <label class="form-check-label" for="hourly">Hourly</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="interval" id="daily" value="daily" checked>
+                                <label class="form-check-label" for="daily">Daily</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="interval" id="weekly" value="weekly">
+                                <label class="form-check-label" for="weekly">Weekly</label>
+                            </div>
+                            <input type="hidden" name="schedule" id="schedule" value="">
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Start Scan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Scan Information</h5>
+                </div>
+                <div class="card-body">
+                    <p>The vulnerability scanner will check for:</p>
+                    <ul>
+                        <li>SQL Injection vulnerabilities</li>
+                        <li>Cross-Site Scripting (XSS)</li>
+                        <li>Remote Code Execution (RCE)</li>
+                        <li>Security Misconfigurations</li>
+                        <li>Broken Authentication</li>
+                        <li>Cross-Site Request Forgery (CSRF)</li>
+                    </ul>
+                    <p class="mb-0"><strong>Note:</strong> Scanning may take several minutes depending on the complexity of the target website.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleScheduleOptions() {
+        const scheduleOptions = document.getElementById('scheduleOptions');
+        const scheduleToggle = document.getElementById('schedule_toggle');
+        const scheduleInput = document.getElementById('schedule');
+        
+        if (scheduleToggle.checked) {
+            scheduleOptions.style.display = 'block';
+            scheduleInput.value = 'true';
+        } else {
+            scheduleOptions.style.display = 'none';
+            scheduleInput.value = '';
+        }
+    }
+</script>
+{% endblock %}
