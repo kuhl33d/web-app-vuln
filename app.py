@@ -1,7 +1,8 @@
 import os
 import time
+import logging
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_wtf import CSRFProtect
@@ -14,12 +15,25 @@ import json
 import plotly
 import plotly.express as px
 import pandas as pd
+import pprint
 
 # Initialize Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-secret-key-for-development')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///vulnerability_scanner.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# CSRF configuration for HTTPS
+app.config['WTF_CSRF_ENABLED'] = os.environ.get('WTF_CSRF_ENABLED', 'True').lower() == 'true'
+app.config['WTF_CSRF_SSL_STRICT'] = os.environ.get('WTF_CSRF_SSL_STRICT', 'False').lower() == 'true'  # Allow CSRF tokens on HTTPS
+app.config['WTF_CSRF_TIME_LIMIT'] = int(os.environ.get('WTF_CSRF_TIME_LIMIT', 3600))  # Token valid for 1 hour
+app.config['WTF_CSRF_SECRET'] = os.environ.get('WTF_CSRF_SECRET', app.config['SECRET_KEY'])  # Use same secret for CSRF
+app.config['WTF_CSRF_METHODS'] = ['POST', 'PUT', 'PATCH', 'DELETE']  # Apply CSRF protection to these methods
+
+# Configure secure cookies for HTTPS
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
+app.config['REMEMBER_COOKIE_SECURE'] = os.environ.get('REMEMBER_COOKIE_SECURE', 'True').lower() == 'true'
+app.config['SESSION_COOKIE_HTTPONLY'] = os.environ.get('SESSION_COOKIE_HTTPONLY', 'True').lower() == 'true'
 
 # Initialize extensions
 db = SQLAlchemy(app)
@@ -461,6 +475,100 @@ def scan_status(scan_id):
         'next_run': scan.next_run.isoformat() if scan.next_run else None
     })
 
+# Configure logging
+log_level = os.environ.get('LOG_LEVEL', 'DEBUG')
+log_file = os.environ.get('LOG_FILE', 'app.log')
+
+logging.basicConfig(
+    level=getattr(logging, log_level),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_file),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# Request logging middleware
+@app.before_request
+def log_request_info():
+    logger.debug('='*50)
+    logger.debug(f'Request: {request.method} {request.path}')
+    logger.debug(f'Request URL: {request.url}')
+    logger.debug(f'Request Scheme: {request.scheme}')
+    logger.debug(f'Request Is Secure: {request.is_secure}')
+    logger.debug(f'Request Referrer: {request.referrer}')
+    logger.debug('Request Headers:')
+    headers_dict = dict(request.headers)
+    logger.debug(pprint.pformat(headers_dict))
+    
+    # Log CSRF token information specifically
+    csrf_token = request.headers.get('X-CSRFToken')
+    if not csrf_token:
+        csrf_token = request.form.get('csrf_token')
+    if csrf_token:
+        logger.debug(f'CSRF Token found: {csrf_token[:10]}...')
+        # Check if token is in session
+        if '_csrf_token' in session:
+            logger.debug(f'Session CSRF token exists: {session["_csrf_token"][:10]}...')
+            logger.debug(f'Token match: {session["_csrf_token"] == csrf_token}')
+        else:
+            logger.debug('No CSRF token in session')
+    else:
+        logger.debug('No CSRF Token found in request')
+    
+    # Log cookie information
+    logger.debug('Request Cookies:')
+    logger.debug(pprint.pformat(dict(request.cookies)))
+    
+    logger.debug('Request Body:')
+    if request.is_json:
+        logger.debug(pprint.pformat(request.json))
+    elif request.form:
+        # Don't log sensitive form data like passwords
+        safe_form = dict(request.form)
+        if 'password' in safe_form:
+            safe_form['password'] = '********'
+        logger.debug(pprint.pformat(safe_form))
+    elif request.data:
+        logger.debug(f"Raw data: {request.data}")
+
+# Response logging middleware
+@app.after_request
+def log_response_info(response):
+    logger.debug(f'Response Status: {response.status_code}')
+    logger.debug(f'Response Headers: {dict(response.headers)}')
+    logger.debug('='*50)
+    return response
+
+# CSRF error handler
+@csrf.error_handler
+def csrf_error(reason):
+    # Log detailed information about the CSRF error
+    logger.error(f'CSRF Error: {reason}')
+    logger.error(f'Request URL: {request.url}')
+    logger.error(f'Request Method: {request.method}')
+    logger.error(f'Request Scheme: {request.scheme}')
+    logger.error(f'Request Is Secure: {request.is_secure}')
+    logger.error(f'Request Referrer: {request.referrer}')
+    logger.error(f'Request Headers: {dict(request.headers)}')
+    logger.error(f'Request Cookies: {dict(request.cookies)}')
+    
+    # Check if CSRF token exists in the session
+    if '_csrf_token' in session:
+        logger.error(f'Session CSRF token exists: {session["_csrf_token"][:10]}...')
+    else:
+        logger.error('No CSRF token in session')
+    
+    # Check if the error is related to HTTPS
+    if 'HTTPS' in str(reason) or 'SSL' in str(reason):
+        logger.error('This appears to be an HTTPS-related CSRF issue')
+        logger.error(f'WTF_CSRF_SSL_STRICT setting: {app.config["WTF_CSRF_SSL_STRICT"]}')
+    
+    # Return a user-friendly error page with refresh option
+    error_message = f'CSRF Error: {reason}. This may happen when using HTTPS. Please try refreshing the page.'
+    return render_template('index.html', error=error_message, csrf_error=True), 400
+
 # Create database tables
 with app.app_context():
     db.create_all()
@@ -474,4 +582,6 @@ with app.app_context():
         db.session.commit()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Enable HTTPS development server
+    logger.info('Starting application with HTTPS support')
+    app.run(debug=True, ssl_context='adhoc')

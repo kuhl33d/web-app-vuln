@@ -106,6 +106,37 @@ Log in with the default admin credentials:
 3. **Database errors**
    - If you encounter database issues, try deleting the `vulnerability_scanner.db` file and restart the application to recreate it
 
+4. **CSRF token issues with HTTPS**
+   - The application now supports HTTPS development server by default
+   - Enhanced CSRF protection has been implemented for secure environments
+   - If you encounter CSRF token validation errors:
+     - Make sure your browser accepts the self-signed certificate
+     - Use the "Refresh Page" button on the error message
+     - Check the application logs for detailed error information
+   - You can adjust CSRF settings in your `.env` file:
+     ```
+     # In .env file
+     WTF_CSRF_SSL_STRICT=False
+     WTF_CSRF_TIME_LIMIT=3600
+     WTF_CSRF_SECRET=your-csrf-secret-key
+     ```
+
+5. **Enhanced Request Logging**
+   - Comprehensive request and response logging has been implemented for debugging
+   - Logs now include detailed information about:
+     - Request URL, scheme, and security status
+     - Complete headers and cookies information
+     - CSRF token validation details
+     - Request body data (with sensitive information masked)
+   - Special attention to CSRF-related issues with detailed error logging
+   - Check `app.log` file for detailed request information
+   - You can adjust logging level in your `.env` file:
+     ```
+     # In .env file
+     LOG_LEVEL=DEBUG  # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+     LOG_FILE=app.log
+     ```
+
 ## Running in Production
 
 For production environments, consider the following:
