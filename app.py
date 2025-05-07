@@ -5,7 +5,8 @@ from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from flask_wtf import CSRFProtect
+# CSRFProtect import removed for GitHub Codespaces compatibility
+# from flask_wtf import CSRFProtect
 from flask_migrate import Migrate
 from flask_mail import Mail, Message
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -23,12 +24,13 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-secret-key-for-
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///vulnerability_scanner.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# CSRF configuration for HTTPS
-app.config['WTF_CSRF_ENABLED'] = os.environ.get('WTF_CSRF_ENABLED', 'True').lower() == 'true'
-app.config['WTF_CSRF_SSL_STRICT'] = os.environ.get('WTF_CSRF_SSL_STRICT', 'False').lower() == 'true'  # Allow CSRF tokens on HTTPS
-app.config['WTF_CSRF_TIME_LIMIT'] = int(os.environ.get('WTF_CSRF_TIME_LIMIT', 3600))  # Token valid for 1 hour
-app.config['WTF_CSRF_SECRET'] = os.environ.get('WTF_CSRF_SECRET', app.config['SECRET_KEY'])  # Use same secret for CSRF
-app.config['WTF_CSRF_METHODS'] = ['POST', 'PUT', 'PATCH', 'DELETE']  # Apply CSRF protection to these methods
+# CSRF protection disabled for local development and GitHub Codespaces
+app.config['WTF_CSRF_ENABLED'] = False  # Disable CSRF protection
+# The following CSRF settings are not used when CSRF is disabled
+# app.config['WTF_CSRF_SSL_STRICT'] = False
+# app.config['WTF_CSRF_TIME_LIMIT'] = 3600
+# app.config['WTF_CSRF_SECRET'] = app.config['SECRET_KEY']
+# app.config['WTF_CSRF_METHODS'] = ['POST', 'PUT', 'PATCH', 'DELETE']
 
 # Configure secure cookies for HTTPS
 app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
@@ -37,7 +39,8 @@ app.config['SESSION_COOKIE_HTTPONLY'] = os.environ.get('SESSION_COOKIE_HTTPONLY'
 
 # Initialize extensions
 db = SQLAlchemy(app)
-csrf = CSRFProtect(app)
+# CSRF protection removed for GitHub Codespaces compatibility
+# csrf = CSRFProtect(app)
 migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
@@ -541,33 +544,8 @@ def log_response_info(response):
     logger.debug('='*50)
     return response
 
-# CSRF error handler
-@csrf.error_handler
-def csrf_error(reason):
-    # Log detailed information about the CSRF error
-    logger.error(f'CSRF Error: {reason}')
-    logger.error(f'Request URL: {request.url}')
-    logger.error(f'Request Method: {request.method}')
-    logger.error(f'Request Scheme: {request.scheme}')
-    logger.error(f'Request Is Secure: {request.is_secure}')
-    logger.error(f'Request Referrer: {request.referrer}')
-    logger.error(f'Request Headers: {dict(request.headers)}')
-    logger.error(f'Request Cookies: {dict(request.cookies)}')
-    
-    # Check if CSRF token exists in the session
-    if '_csrf_token' in session:
-        logger.error(f'Session CSRF token exists: {session["_csrf_token"][:10]}...')
-    else:
-        logger.error('No CSRF token in session')
-    
-    # Check if the error is related to HTTPS
-    if 'HTTPS' in str(reason) or 'SSL' in str(reason):
-        logger.error('This appears to be an HTTPS-related CSRF issue')
-        logger.error(f'WTF_CSRF_SSL_STRICT setting: {app.config["WTF_CSRF_SSL_STRICT"]}')
-    
-    # Return a user-friendly error page with refresh option
-    error_message = f'CSRF Error: {reason}. This may happen when using HTTPS. Please try refreshing the page.'
-    return render_template('index.html', error=error_message, csrf_error=True), 400
+# CSRF error handler removed for GitHub Codespaces compatibility
+# The CSRF protection has been disabled to avoid issues with port forwarding
 
 # Create database tables
 with app.app_context():

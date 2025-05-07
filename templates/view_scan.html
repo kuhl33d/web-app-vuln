@@ -73,7 +73,7 @@
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('update_schedule', scan_id=scan.id) }}" class="row g-3 align-items-center">
-                        {{ csrf_token() }}
+                        <!-- CSRF token removed for GitHub Codespaces compatibility -->
                         <div class="col-auto">
                             <label class="visually-hidden" for="interval">Schedule</label>
                             <select class="form-select" id="interval" name="interval">

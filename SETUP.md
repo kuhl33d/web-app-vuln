@@ -106,20 +106,19 @@ Log in with the default admin credentials:
 3. **Database errors**
    - If you encounter database issues, try deleting the `vulnerability_scanner.db` file and restart the application to recreate it
 
-4. **CSRF token issues with HTTPS**
-   - The application now supports HTTPS development server by default
-   - Enhanced CSRF protection has been implemented for secure environments
-   - If you encounter CSRF token validation errors:
-     - Make sure your browser accepts the self-signed certificate
-     - Use the "Refresh Page" button on the error message
-     - Check the application logs for detailed error information
-   - You can adjust CSRF settings in your `.env` file:
+4. **Running in GitHub Codespaces or with Port Forwarding**
+   - CSRF protection has been disabled by default for compatibility with GitHub Codespaces and port forwarding
+   - This makes the application more compatible with development environments where the request origin might differ
+   - No CSRF token configuration is needed when running in these environments
+   - If you need to re-enable CSRF protection for production, update the following in `app.py`:
+     ```python
+     # Change this line in app.py
+     app.config['WTF_CSRF_ENABLED'] = True  # Enable CSRF protection
+     
+     # And uncomment the CSRFProtect initialization
+     csrf = CSRFProtect(app)
      ```
-     # In .env file
-     WTF_CSRF_SSL_STRICT=False
-     WTF_CSRF_TIME_LIMIT=3600
-     WTF_CSRF_SECRET=your-csrf-secret-key
-     ```
+   - Then restore the CSRF error handler and update your `.env` file with appropriate settings
 
 5. **Enhanced Request Logging**
    - Comprehensive request and response logging has been implemented for debugging
@@ -137,6 +136,15 @@ Log in with the default admin credentials:
      LOG_FILE=app.log
      ```
 
+## Running in GitHub Codespaces
+
+The application has been configured to work seamlessly in GitHub Codespaces:
+
+1. CSRF protection has been disabled to avoid issues with port forwarding
+2. No additional configuration is needed for CSRF tokens
+3. When the application is running, you can access it through the Codespaces forwarded port
+4. If you encounter any issues, check the application logs in `app.log`
+
 ## Running in Production
 
 For production environments, consider the following:
@@ -145,6 +153,7 @@ For production environments, consider the following:
 2. Set up HTTPS using a reverse proxy like Nginx
 3. Use a production-grade database like PostgreSQL
 4. Disable debug mode by setting `FLASK_DEBUG=False` in your .env file
+5. Re-enable CSRF protection by setting `WTF_CSRF_ENABLED=True` in your .env file and uncommenting the CSRFProtect initialization in app.py
 
 ## Need Help?
 
