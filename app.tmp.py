@@ -18,26 +18,6 @@ import plotly.express as px
 import pandas as pd
 import pprint
 
-# Environment variables - defined directly in code instead of using dotenv
-# ----- START ENVIRONMENT VARIABLES -----
-# Flask app configuration
-os.environ['SECRET_KEY'] = 'default-secret-key-for-development'
-os.environ['SESSION_COOKIE_SECURE'] = 'False'  # Set to False for non-HTTPS development
-os.environ['REMEMBER_COOKIE_SECURE'] = 'False'  # Set to False for non-HTTPS development
-os.environ['SESSION_COOKIE_HTTPONLY'] = 'True'
-
-# Email configuration
-os.environ['MAIL_SERVER'] = 'smtp.gmail.com'
-os.environ['MAIL_PORT'] = '587'
-os.environ['MAIL_USERNAME'] = ''  # Add your email if needed
-os.environ['MAIL_PASSWORD'] = ''  # Add your password if needed
-os.environ['MAIL_DEFAULT_SENDER'] = ''  # Add your default sender if needed
-
-# Logging configuration
-os.environ['LOG_LEVEL'] = 'DEBUG'
-os.environ['LOG_FILE'] = 'app.log'
-# ----- END ENVIRONMENT VARIABLES -----
-
 # Initialize Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-secret-key-for-development')
@@ -53,8 +33,8 @@ app.config['WTF_CSRF_ENABLED'] = False  # Disable CSRF protection
 # app.config['WTF_CSRF_METHODS'] = ['POST', 'PUT', 'PATCH', 'DELETE']
 
 # Configure secure cookies for HTTPS
-app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
-app.config['REMEMBER_COOKIE_SECURE'] = os.environ.get('REMEMBER_COOKIE_SECURE', 'False').lower() == 'true'
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
+app.config['REMEMBER_COOKIE_SECURE'] = os.environ.get('REMEMBER_COOKIE_SECURE', 'True').lower() == 'true'
 app.config['SESSION_COOKIE_HTTPONLY'] = os.environ.get('SESSION_COOKIE_HTTPONLY', 'True').lower() == 'true'
 
 # Initialize extensions
@@ -564,6 +544,9 @@ def log_response_info(response):
     logger.debug('='*50)
     return response
 
+# CSRF error handler removed for GitHub Codespaces compatibility
+# The CSRF protection has been disabled to avoid issues with port forwarding
+
 # Create database tables
 with app.app_context():
     db.create_all()
@@ -577,6 +560,6 @@ with app.app_context():
         db.session.commit()
 
 if __name__ == '__main__':
-    # Run the development server without SSL
-    logger.info('Starting application in development mode without SSL')
-    app.run(debug=True, host='0.0.0.0')
+    # Enable HTTPS development server
+    logger.info('Starting application with HTTPS support')
+    app.run(debug=True, ssl_context='adhoc')
