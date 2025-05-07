@@ -47,9 +47,10 @@ Edit the `.env` file and update the values as needed:
 
 ```
 SECRET_KEY=your-secret-key-here
-MAIL_USERNAME=your-email@example.com
-MAIL_PASSWORD=your-email-password
-MAIL_DEFAULT_SENDER=your-email@example.com
+# Email functionality is currently disabled
+# MAIL_USERNAME=your-email@example.com
+# MAIL_PASSWORD=your-email-password
+# MAIL_DEFAULT_SENDER=your-email@example.com
 ```
 
 ### 4. Initialize the Database
@@ -97,9 +98,10 @@ Log in with the default admin credentials:
      PORT=5001
      ```
 
-2. **Email sending fails**
-   - Verify your email credentials in the .env file
-   - For Gmail, you may need to enable "Less secure app access" or use an App Password
+2. **Email notifications**
+   - Email notifications are currently disabled
+   - All vulnerability reports are available directly through the web interface
+   - Scheduled scans will still run as configured but without email alerts
 
 3. **Database errors**
    - If you encounter database issues, try deleting the `vulnerability_scanner.db` file and restart the application to recreate it

@@ -206,12 +206,13 @@ def run_scan(scan_id):
     scan.status = 'completed'
     db.session.commit()
     
-    # Send email notification if vulnerabilities found
+    # Email notifications are currently disabled
+    # Vulnerabilities can be viewed directly on the web interface
     vulnerable_results = ScanResult.query.filter_by(scan_id=scan.id, is_vulnerable=True).all()
-    if vulnerable_results and app.config['MAIL_USERNAME']:
-        user = User.query.get(scan.user_id)
-        if user and user.email:
-            send_vulnerability_alert(user.email, scan, vulnerable_results)
+    # if vulnerable_results and app.config['MAIL_USERNAME']:
+    #     user = User.query.get(scan.user_id)
+    #     if user and user.email:
+    #         send_vulnerability_alert(user.email, scan, vulnerable_results)
 
 # Function to send vulnerability alert emails
 def send_vulnerability_alert(email, scan, vulnerabilities):
